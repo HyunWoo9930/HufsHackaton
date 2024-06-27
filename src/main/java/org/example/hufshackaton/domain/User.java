@@ -15,7 +15,7 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Schema(hidden = true)
     private Long id;
-    private String user_id;
+    private String userId;
     private String name;
     private String password;
     private String email;
