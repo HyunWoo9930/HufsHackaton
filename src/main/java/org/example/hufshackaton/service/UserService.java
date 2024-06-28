@@ -40,6 +40,14 @@ public class UserService {
         return userRepository.findByUserId(user_id);
     }
 
+    public boolean login(String user_id, String password) {
+        User user = getUser(user_id);
+        if(user == null) {
+            throw new NotFoundException("유저가 존재하지 않습니다.");
+        }
+        return passwordEncoder.matches(password, user.getPassword());
+    }
+
     public void updatePassword(String user_id, String password, String new_password) throws BadRequestException {
         User user = getUser(user_id);
         if (user == null) {

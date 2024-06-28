@@ -30,6 +30,21 @@ public class UserController {
         return ResponseEntity.ok(users);
     }
 
+    @GetMapping("/login")
+    public ResponseEntity<?> login(
+            @RequestParam(value = "id") String id,
+            @RequestParam(value = "password") String password
+    ) {
+        try {
+            if (userService.login(id, password)) {
+                return ResponseEntity.ok("ok");
+            }
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("로그인 실패");
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
+    }
+
     @PostMapping("/create")
     public ResponseEntity<String> createUser(@RequestBody User user) {
         try {
