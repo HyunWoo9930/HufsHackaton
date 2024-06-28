@@ -58,7 +58,7 @@ public class CustomBotService {
             newSports.setDescription(description);
             String imgUrl = getImgUrl(sports_name);
             newSports.setImageUrl(imgUrl);
-            request = new ChatGPTRequest(model, sports_name + "은 어디나라 운동이야? 다른 말은 하지말고 어디 나라인지만 적어줘. 나라가 많으면 그냥 공통이라고만 적어줘.");
+            request = new ChatGPTRequest(model, sports_name + "은 어디나라 운동이야? 다른 말은 하지말고 어디 나라인지만 적어줘. 나라가 많으면 그냥 만국공통이라고만 적어줘.");
             chatGPTResponse = template.postForObject(apiURL, request, ChatGPTResponse.class);
             String country = chatGPTResponse.getChoices().get(0).getMessage().getContent();
             newSports.setCountry(country);
