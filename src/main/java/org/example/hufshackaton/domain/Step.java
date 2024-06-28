@@ -18,6 +18,7 @@ public class Step {
 
     private String name;
     private String youtubeUrl;
+    private String description;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sports_id")

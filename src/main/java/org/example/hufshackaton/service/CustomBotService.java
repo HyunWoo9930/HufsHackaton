@@ -58,11 +58,15 @@ public class CustomBotService {
             String imgUrl = getImgUrl(sports_name);
             newSports.setImageUrl(imgUrl);
             for (String stepStr : steps) {
+                ChatGPTRequest stepRequest = new ChatGPTRequest(model, "운동 종류는 " + sports_name + "이고, 운동 단계는 " + stepStr + "이 단계를 두줄 정도로 요약해줘. 요약 말고 다른 말은 하지말아줘.");
+                ChatGPTResponse stepChatGPTResponse = template.postForObject(apiURL, stepRequest, ChatGPTResponse.class);
+                String stepDescription = stepChatGPTResponse.getChoices().get(0).getMessage().getContent();
                 Step step = new Step();
+                step.setDescription(stepDescription);
                 step.setSports(newSports);
                 step.setName(stepStr);
-                String video = searchVideo(sports_name, stepStr);
-                step.setYoutubeUrl(video);
+//                String video = searchVideo(sports_name, stepStr);
+//                step.setYoutubeUrl(video);
                 newSports.addStep(step);
             }
             return saveSports(newSports);

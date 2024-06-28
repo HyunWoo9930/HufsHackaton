@@ -48,7 +48,7 @@ public class CustomBotController {
     ) {
         ChatGPTRequest request = new ChatGPTRequest(model, "넌 이제부터 내가 말한 조건을 생각해서, " +
                 "[IMPORTANT] 전세계 스포츠 운동 중 한개를 선택해주는 운동 전문가야 " +
-                "다른 내용은 덧붙히지 말고 추천하는 운동만 얘기해줘. 조건은 " +
+                "조건은 " +
                 "활동 수준은 " + active + ", " +
                 "팀워크 수준은 " + teamwork + ", " +
                 "실내/실외는 " + inout + ", " +
@@ -59,7 +59,8 @@ public class CustomBotController {
                 "기술 습득은 " + technology + ", " +
                 "규칙 및 규율은 " + rule + ", " +
                 "사회적 상호작용은 " + interaction + ", " +
-                "이고 Temperature 는 0.2이야.");
+                "이고 Temperature 는 0.2이야." +
+                "다른 내용은 덧붙히지 말고 추천하는 운동만 얘기해줘.");
         ChatGPTResponse chatGPTResponse = template.postForObject(apiURL, request, ChatGPTResponse.class);
         return ResponseEntity.ok(chatGPTResponse.getChoices().get(0).getMessage().getContent());
     }
