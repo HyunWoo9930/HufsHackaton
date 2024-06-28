@@ -45,7 +45,7 @@ public class UserController {
     }
 
     @DeleteMapping("/delete_user")
-    public ResponseEntity<?> deleteUser(@RequestParam(value = "user_id") String user_id) {
+    public ResponseEntity<?> deleteUser(@RequestParam(value = "userId") String user_id) {
         if (userService.getUser(user_id) != null) {
             userService.deleteUser(user_id);
             if (userService.getUser(user_id) == null) {
@@ -57,7 +57,7 @@ public class UserController {
     }
 
     @GetMapping("get_user")
-    public ResponseEntity<?> getUser(@RequestParam(value = "user_id") String user_id) {
+    public ResponseEntity<?> getUser(@RequestParam(value = "userId") String user_id) {
         try {
             User user = userService.getUser(user_id);
             if (user == null) {
@@ -71,9 +71,9 @@ public class UserController {
 
     @PutMapping("update_password")
     public ResponseEntity<?> updatePassword(
-            @RequestParam(value = "user_id") String user_id,
+            @RequestParam(value = "userId") String user_id,
             @RequestParam(value = "password") String password,
-            @RequestParam(value = "new_password") String new_password
+            @RequestParam(value = "newPassword") String new_password
     ) {
         try {
             userService.updatePassword(user_id, password, new_password);
