@@ -5,9 +5,6 @@ import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.youtube.YouTube;
 import com.google.api.services.youtube.model.SearchListResponse;
 import com.google.api.services.youtube.model.SearchResult;
-import com.google.api.services.youtube.model.Video;
-import com.google.api.services.youtube.model.VideoListResponse;
-import org.checkerframework.checker.units.qual.C;
 import org.example.hufshackaton.domain.ChatGPTRequest;
 import org.example.hufshackaton.domain.ChatGPTResponse;
 import org.example.hufshackaton.domain.Sports;
@@ -35,10 +32,10 @@ public class CustomBotService {
     @Value("${openai.model}")
     private String model;
 
-    private String apiURL = "https://api.openai.com/v1/chat/completions";
+    private static final String API_URL = "https://api.openai.com/v1/chat/completions";
 
     @Autowired
-    private RestTemplate template;
+    private RestTemplate restTemplate;
 
     private final SportsRepository sportsRepository;
 
@@ -46,109 +43,108 @@ public class CustomBotService {
         this.sportsRepository = sportsRepository;
     }
 
-    public Sports saveSportsAndStep(String sports_name, String str) throws IOException {
-        Sports sports = findSports(sports_name);
-        List<String> steps = Arrays.stream(str.split("\n")).toList();
+    public Sports saveSportsAndStep(String sportsName, String stepsDescription) throws IOException {
+        Sports sports = findSports(sportsName);
+
         if (sports == null) {
-            Sports newSports = new Sports();
-            newSports.setName(sports_name);
-            ChatGPTRequest request = new ChatGPTRequest(model, "넌 이제 " + sports_name + "에 전문가야. 초심자한테 " + sports_name + "에 관해서 간단하게 두줄정도만 설명하줘 다른 말은 하지마.");
-            ChatGPTResponse chatGPTResponse = template.postForObject(apiURL, request, ChatGPTResponse.class);
-            String description = chatGPTResponse.getChoices().get(0).getMessage().getContent();
-            newSports.setDescription(description);
-            String imgUrl = getImgUrl(sports_name);
-            newSports.setImageUrl(imgUrl);
-            request = new ChatGPTRequest(model, sports_name + "은 어디나라 운동이야? 다른 말은 하지말고 어디 나라인지만 적어줘. 나라가 많으면 그냥 만국공통이라고만 적어줘.");
-            chatGPTResponse = template.postForObject(apiURL, request, ChatGPTResponse.class);
-            String country = chatGPTResponse.getChoices().get(0).getMessage().getContent();
-            newSports.setCountry(country);
-            for (String stepStr : steps) {
-                ChatGPTRequest stepRequest = new ChatGPTRequest(model, "운동 종류는 " + sports_name + "이고, 운동 단계는 " + stepStr + "이 단계를 두줄 정도로 요약해줘. 요약 말고 다른 말은 하지말아줘.");
-                ChatGPTResponse stepChatGPTResponse = template.postForObject(apiURL, stepRequest, ChatGPTResponse.class);
-                String stepDescription = stepChatGPTResponse.getChoices().get(0).getMessage().getContent();
-                Step step = new Step();
-                step.setDescription(stepDescription);
-                step.setSports(newSports);
-                step.setName(stepStr);
-                String video = searchVideo(sports_name, stepStr);
-                step.setYoutubeUrl(video);
-                newSports.addStep(step);
-            }
-            return saveSports(newSports);
-        } else {
-            return sports;
+            sports = createNewSports(sportsName);
+            addStepsToSports(sports, stepsDescription);
+            return saveSports(sports);
+        }
+        return sports;
+    }
+
+    private Sports createNewSports(String sportsName) {
+        Sports sports = new Sports();
+        sports.setName(sportsName);
+        sports.setDescription(fetchDescriptionFromChatGPT(sportsName));
+        sports.setImageUrl(fetchImageUrl(sportsName));
+        sports.setCountry(fetchCountryFromChatGPT(sportsName));
+        return sports;
+    }
+
+    private void addStepsToSports(Sports sports, String stepsDescription) throws IOException {
+        List<String> steps = Arrays.asList(stepsDescription.split("\n"));
+        for (String stepStr : steps) {
+            Step step = createStep(sports, stepStr);
+            sports.addStep(step);
         }
     }
 
-    public Sports findSports(String sports_name) {
-        return sportsRepository.findByName(sports_name);
+    private Step createStep(Sports sports, String stepStr) throws IOException {
+        Step step = new Step();
+        step.setName(stepStr);
+        step.setDescription(fetchStepDescriptionFromChatGPT(sports.getName(), stepStr));
+        step.setSports(sports);
+        step.setYoutubeUrl(searchVideo(sports.getName(), stepStr));
+        return step;
+    }
+
+    public Sports findSports(String sportsName) {
+        return sportsRepository.findByName(sportsName);
     }
 
     public Sports saveSports(Sports sports) {
         return sportsRepository.save(sports);
     }
 
-    public String searchVideo(String sports_name, String query) throws IOException {
-        // JSON 데이터를 처리하기 위한 JsonFactory 객체 생성
-        JsonFactory jsonFactory = new JacksonFactory();
-
-        // YouTube 객체를 빌드하여 API에 접근할 수 있는 YouTube 클라이언트 생성
-        YouTube youtube = new YouTube.Builder(
-                new com.google.api.client.http.javanet.NetHttpTransport(),
-                jsonFactory,
-                request -> {
-                })
-                .build();
-
-        // YouTube Search API를 사용하여 동영상 검색을 위한 요청 객체 생성
+    public String searchVideo(String sportsName, String query) throws IOException {
+        YouTube youtube = new YouTube.Builder(new com.google.api.client.http.javanet.NetHttpTransport(), new JacksonFactory(), request -> {}).build();
         YouTube.Search.List search = youtube.search().list(Collections.singletonList("id,snippet"));
-
-        // API 키 설정
         search.setKey(apiKey);
+        search.setQ(sportsName + " " + query);
 
-        // 검색어 설정
-        search.setQ(sports_name + query);
-
-        // 검색 요청 실행 및 응답 받아오기
         SearchListResponse searchResponse = search.execute();
-
-        // 검색 결과에서 동영상 목록 가져오기
         List<SearchResult> searchResultList = searchResponse.getItems();
 
-        if (searchResultList != null && searchResultList.size() > 0) {
-            SearchResult searchResult = searchResultList.get(0);
-            String videoId = searchResult.getId().getVideoId();
-            return "https://www.youtube.com/watch?v=" + videoId;
+        if (searchResultList != null && !searchResultList.isEmpty()) {
+            return "https://www.youtube.com/watch?v=" + searchResultList.get(0).getId().getVideoId();
         }
         return "검색 결과가 없습니다";
     }
 
-    public String getImgUrl(String name) {
-        String imageUrl = "";
+    public String fetchImageUrl(String sportsName) {
         try {
-            Connection.Response res = Jsoup.connect(
-                            "https://www.googleapis.com/customsearch/v1?key=" + apiKey + "&cx=1295c887390fe450d&q=운동 " + name + " 하는 사진")
-                    .ignoreContentType(true).userAgent("Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36").execute();
-            JSONObject json;
-
-            json = new JSONObject(res.body());
-            imageUrl =
-                    json.getJSONArray("items").getJSONObject(0).getJSONObject("pagemap").getJSONArray("cse_thumbnail").getJSONObject(0).getString("src");
-
+            Connection.Response res = Jsoup.connect("https://www.googleapis.com/customsearch/v1?key=" + apiKey + "&cx=1295c887390fe450d&q=운동 " + sportsName + " 하는 사진")
+                    .ignoreContentType(true).userAgent("Mozilla/5.0").execute();
+            JSONObject json = new JSONObject(res.body());
+            return json.getJSONArray("items").getJSONObject(0).getJSONObject("pagemap").getJSONArray("cse_thumbnail").getJSONObject(0).getString("src");
         } catch (Exception e) {
-            imageUrl = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRjBEWRP1Kx49IU8pKabdFyKHR1dW7Wn6O0zg&s";
+            return "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRjBEWRP1Kx49IU8pKabdFyKHR1dW7Wn6O0zg&s";
         }
-        return imageUrl;
     }
 
-    public Sports getSports(String sports_name) throws IOException {
-        Sports sports = sportsRepository.searchByName(sports_name);
+    public Sports getSports(String sportsName) throws IOException {
+        Sports sports = sportsRepository.searchByName(sportsName);
+
         if (sports == null) {
-            ChatGPTRequest request = new ChatGPTRequest(model, "넌 이제 " + sports_name + "에 전문가야. 초심자가 너한테 물어봤을떄 " + sports_name + "을 10단계로 나눠서 알려줘. 다른건 전부 빼고 파싱하기 좋게 1부터 10까지 개행으로만 나누어서 적어줘");
-            ChatGPTResponse chatGPTResponse = template.postForObject(apiURL, request, ChatGPTResponse.class);
-            return saveSportsAndStep(sports_name, chatGPTResponse.getChoices().get(0).getMessage().getContent());
-        } else {
-            return sports;
+            String stepsDescription = fetchStepsDescriptionFromChatGPT(sportsName);
+            return saveSportsAndStep(sportsName, stepsDescription);
         }
+        return sports;
+    }
+
+    private String fetchDescriptionFromChatGPT(String sportsName) {
+        ChatGPTRequest request = new ChatGPTRequest(model, "넌 이제 " + sportsName + "에 전문가야. 초심자한테 " + sportsName + "에 관해서 간단하게 두줄정도만 설명해줘 다른 말은 하지마.");
+        return postToChatGPT(request).getChoices().get(0).getMessage().getContent();
+    }
+
+    private String fetchCountryFromChatGPT(String sportsName) {
+        ChatGPTRequest request = new ChatGPTRequest(model, sportsName + "은 어디나라 운동이야? 다른 말은 하지말고 어디 나라인지만 적어줘. 나라가 많으면 그냥 만국공통이라고만 적어줘.");
+        return postToChatGPT(request).getChoices().get(0).getMessage().getContent();
+    }
+
+    private String fetchStepDescriptionFromChatGPT(String sportsName, String step) {
+        ChatGPTRequest request = new ChatGPTRequest(model, "운동 종류는 " + sportsName + "이고, 운동 단계는 " + step + "이 단계를 두줄 정도로 요약해줘. 요약 말고 다른 말은 하지말아줘.");
+        return postToChatGPT(request).getChoices().get(0).getMessage().getContent();
+    }
+
+    private String fetchStepsDescriptionFromChatGPT(String sportsName) {
+        ChatGPTRequest request = new ChatGPTRequest(model, "넌 이제 " + sportsName + "에 전문가야. 초심자가 너한테 물어봤을때 " + sportsName + "을 10단계로 나눠서 알려줘. 다른건 전부 빼고 파싱하기 좋게 1부터 10까지 개행으로만 나누어서 적어줘");
+        return postToChatGPT(request).getChoices().get(0).getMessage().getContent();
+    }
+
+    private ChatGPTResponse postToChatGPT(ChatGPTRequest request) {
+        return restTemplate.postForObject(API_URL, request, ChatGPTResponse.class);
     }
 }
