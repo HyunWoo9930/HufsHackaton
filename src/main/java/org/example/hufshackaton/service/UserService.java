@@ -45,11 +45,14 @@ public class UserService {
         if (user == null) {
             throw new NotFoundException("user가 존재하지 않습니다.");
         }
-        if (passwordEncoder.matches(password, user.getPassword())) {
+        System.out.println("password = " + password);
+        System.out.println("user.getPassword() = " + user.getPassword());
+        System.out.println(passwordEncoder.matches(password, user.getPassword()));
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            throw new BadRequestException("현재 비밀번호와 같지않습니다.");
+        } else {
             user.setPassword(passwordEncoder.encode(new_password));
             userSave(user);
-        } else {
-            throw new BadRequestException("현재 비밀번호와 같지않습니다.");
         }
         if (!passwordEncoder.matches(new_password, getUser(user_id).getPassword())) {
             throw new RuntimeException("비밀번호가 변경되지 않았습니다.");

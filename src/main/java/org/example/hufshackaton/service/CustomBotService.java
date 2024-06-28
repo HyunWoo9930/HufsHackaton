@@ -65,8 +65,8 @@ public class CustomBotService {
                 step.setDescription(stepDescription);
                 step.setSports(newSports);
                 step.setName(stepStr);
-//                String video = searchVideo(sports_name, stepStr);
-//                step.setYoutubeUrl(video);
+                String video = searchVideo(sports_name, stepStr);
+                step.setYoutubeUrl(video);
                 newSports.addStep(step);
             }
             return saveSports(newSports);
@@ -131,7 +131,7 @@ public class CustomBotService {
                     json.getJSONArray("items").getJSONObject(0).getJSONObject("pagemap").getJSONArray("cse_thumbnail").getJSONObject(0).getString("src");
 
         } catch (Exception e) {
-            imageUrl = "";
+            imageUrl = "알맞은 url을 찾지 못하였습니다.";
         }
         return imageUrl;
     }
