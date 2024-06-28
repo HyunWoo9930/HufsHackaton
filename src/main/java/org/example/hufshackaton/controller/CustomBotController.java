@@ -17,6 +17,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/bot")
+@CrossOrigin(origins = "*")
 public class CustomBotController {
 
     private final CustomBotService customBotService;
