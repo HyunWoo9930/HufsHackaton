@@ -33,7 +33,7 @@ jobs:
         run: echo "artifact=$(ls ./build/libs)" >> $GITHUB_ENV
 
       - name: Beanstalk Deploy
-        uses: einaregilson/beanstalk-deploy@v20
+        uses: einaregilsson/beanstalk-deploy@v20
         with:
           application_name: springboot-developer
           environment_name: springboot-developer-env
