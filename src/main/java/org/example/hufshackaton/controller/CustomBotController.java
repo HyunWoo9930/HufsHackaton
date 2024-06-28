@@ -46,7 +46,7 @@ public class CustomBotController {
             @RequestParam(name = "technology") String technology,
             @RequestParam(name = "rule") String rule,
             @RequestParam(name = "interaction") String interaction
-    ) {
+    ) throws IOException {
         ChatGPTRequest request = new ChatGPTRequest(model, "넌 이제부터 내가 말한 조건을 생각해서, " +
                 "[IMPORTANT] 전세계 스포츠 운동 중 한개를 선택해주는 운동 전문가야 " +
                 "조건은 " +
@@ -63,18 +63,13 @@ public class CustomBotController {
                 "이고 Temperature 는 0.2이야." +
                 "다른 내용은 덧붙히지 말고 추천하는 운동만 얘기해줘.");
         ChatGPTResponse chatGPTResponse = template.postForObject(apiURL, request, ChatGPTResponse.class);
-        return ResponseEntity.ok(chatGPTResponse.getChoices().get(0).getMessage().getContent());
-    }
 
-    @GetMapping("/get_sports")
-    @Operation(summary = "만약 DB에 존재하는 이름이면 그 스포츠를 반환해주고, 없으면 새로 생성하여 반환해주는 API")
-    public ResponseEntity<?> createNewSports(
-            @RequestParam(value = "sports_name") String sports_name
-    ) throws IOException {
+        String sports_name = chatGPTResponse.getChoices().get(0).getMessage().getContent();
+
         Sports sports = customBotService.findSports(sports_name);
-        if(sports == null) {
-        ChatGPTRequest request = new ChatGPTRequest(model, "넌 이제 " + sports_name + "에 전문가야. 초심자가 너한테 물어봤을떄 " + sports_name + "을 10단계로 나눠서 알려줘. 다른건 전부 빼고 파싱하기 좋게 1부터 10까지 개행으로만 나누어서 적어줘");
-        ChatGPTResponse chatGPTResponse = template.postForObject(apiURL, request, ChatGPTResponse.class);
+        if (sports == null) {
+            request = new ChatGPTRequest(model, "넌 이제 " + sports_name + "에 전문가야. 초심자가 너한테 물어봤을떄 " + sports_name + "을 10단계로 나눠서 알려줘. 다른건 전부 빼고 파싱하기 좋게 1부터 10까지 개행으로만 나누어서 적어줘");
+            chatGPTResponse = template.postForObject(apiURL, request, ChatGPTResponse.class);
             Sports sports1 = customBotService.saveSportsAndStep(sports_name, chatGPTResponse.getChoices().get(0).getMessage().getContent());
             return ResponseEntity.ok(sports1);
         } else {
