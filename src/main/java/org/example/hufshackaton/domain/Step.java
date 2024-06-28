@@ -1,5 +1,6 @@
 package org.example.hufshackaton.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -21,5 +22,6 @@ public class Step {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sports_id")
     @Schema(hidden = true)
+    @JsonIgnore
     private Sports sports;
 }

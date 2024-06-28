@@ -22,4 +22,5 @@ public class SportsController {
     public ResponseEntity<?> getAllSports() {
         return ResponseEntity.ok(sportsService.getAllSports());
     }
+
 }

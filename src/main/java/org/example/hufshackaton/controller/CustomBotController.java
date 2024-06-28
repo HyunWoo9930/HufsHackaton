@@ -1,19 +1,26 @@
 package org.example.hufshackaton.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
 import org.example.hufshackaton.domain.ChatGPTRequest;
 import org.example.hufshackaton.domain.ChatGPTResponse;
+import org.example.hufshackaton.domain.Sports;
+import org.example.hufshackaton.service.CustomBotService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
 @RestController
 @RequestMapping("/bot")
 public class CustomBotController {
+
+    private final CustomBotService customBotService;
+
     @Value("${openai.model}")
     private String model;
 
@@ -21,6 +28,10 @@ public class CustomBotController {
 
     @Autowired
     private RestTemplate template;
+
+    public CustomBotController(CustomBotService customBotService) {
+        this.customBotService = customBotService;
+    }
 
     @GetMapping("/sports_tendency_survey_chat")
     public ResponseEntity<?> chat(
@@ -37,7 +48,6 @@ public class CustomBotController {
     ) {
         ChatGPTRequest request = new ChatGPTRequest(model, "넌 이제부터 내가 말한 조건을 생각해서, " +
                 "[IMPORTANT] 전세계 스포츠 운동 중 한개를 선택해주는 운동 전문가야 " +
-                "운동은 한국(태권도), 일본(유도), 중국(탁구), 미국(농구), 영국(크리켓), 캐나다(아이스 하키), 프랑스(테니스), 스페인(축구), 포르투갈(풋살), 스웨덴(아이스 하키), 덴마크(핸드볼), 노르웨이(바이애슬론), 브라질(카포에이라), 아르헨티나(파토), 멕시코(차레리아) 15개중 한개로 골라줘야해." +
                 "다른 내용은 덧붙히지 말고 추천하는 운동만 얘기해줘. 조건은 " +
                 "활동 수준은 " + active + ", " +
                 "팀워크 수준은 " + teamwork + ", " +
@@ -54,15 +64,20 @@ public class CustomBotController {
         return ResponseEntity.ok(chatGPTResponse.getChoices().get(0).getMessage().getContent());
     }
 
-    @GetMapping("/create_new_sports")
+    @GetMapping("/get_sports")
+    @Operation(summary = "만약 DB에 존재하는 이름이면 그 스포츠를 반환해주고, 없으면 새로 생성하여 반환해주는 API")
     public ResponseEntity<?> createNewSports(
             @RequestParam(value = "sports_name") String sports_name
-    ) {
+    ) throws IOException {
+        Sports sports = customBotService.findSports(sports_name);
+        if(sports == null) {
         ChatGPTRequest request = new ChatGPTRequest(model, "넌 이제 " + sports_name + "에 전문가야. 초심자가 너한테 물어봤을떄 " + sports_name + "을 10단계로 나눠서 알려줘. 다른건 전부 빼고 파싱하기 좋게 1부터 10까지 개행으로만 나누어서 적어줘");
         ChatGPTResponse chatGPTResponse = template.postForObject(apiURL, request, ChatGPTResponse.class);
-        List<String> steps = Arrays.stream(chatGPTResponse.getChoices().get(0).getMessage().getContent().split("\n")).toList();
-
-        return ResponseEntity.ok(chatGPTResponse.getChoices().get(0).getMessage().getContent());
+            Sports sports1 = customBotService.saveSportsAndStep(sports_name, chatGPTResponse.getChoices().get(0).getMessage().getContent());
+            return ResponseEntity.ok(sports1);
+        } else {
+            return ResponseEntity.ok(sports);
+        }
     }
 
 }
