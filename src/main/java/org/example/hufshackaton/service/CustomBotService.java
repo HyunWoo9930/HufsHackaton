@@ -136,7 +136,7 @@ public class CustomBotService {
                     json.getJSONArray("items").getJSONObject(0).getJSONObject("pagemap").getJSONArray("cse_thumbnail").getJSONObject(0).getString("src");
 
         } catch (Exception e) {
-            imageUrl = "알맞은 url을 찾지 못하였습니다.";
+            imageUrl = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRjBEWRP1Kx49IU8pKabdFyKHR1dW7Wn6O0zg&s";
         }
         return imageUrl;
     }
