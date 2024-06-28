@@ -12,6 +12,9 @@ import org.example.hufshackaton.domain.ChatGPTResponse;
 import org.example.hufshackaton.domain.Sports;
 import org.example.hufshackaton.domain.Step;
 import org.example.hufshackaton.repository.SportsRepository;
+import org.json.JSONObject;
+import org.jsoup.Connection;
+import org.jsoup.Jsoup;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -52,6 +55,8 @@ public class CustomBotService {
             ChatGPTResponse chatGPTResponse = template.postForObject(apiURL, request, ChatGPTResponse.class);
             String description = chatGPTResponse.getChoices().get(0).getMessage().getContent();
             newSports.setDescription(description);
+            String imgUrl = getImgUrl(sports_name);
+            newSports.setImageUrl(imgUrl);
             for (String stepStr : steps) {
                 Step step = new Step();
                 step.setSports(newSports);
@@ -107,5 +112,23 @@ public class CustomBotService {
             return "https://www.youtube.com/watch?v=" + videoId;
         }
         return "검색 결과가 없습니다";
+    }
+
+    public String getImgUrl(String name) {
+        String imageUrl = "";
+        try {
+            Connection.Response res = Jsoup.connect(
+                            "https://www.googleapis.com/customsearch/v1?key=" + apiKey + "&cx=1295c887390fe450d&q=운동 " + name + " 하는 사진")
+                    .ignoreContentType(true).userAgent("Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36").execute();
+            JSONObject json;
+
+            json = new JSONObject(res.body());
+            imageUrl =
+                    json.getJSONArray("items").getJSONObject(0).getJSONObject("pagemap").getJSONArray("cse_thumbnail").getJSONObject(0).getString("src");
+
+        } catch (Exception e) {
+            imageUrl = "";
+        }
+        return imageUrl;
     }
 }
