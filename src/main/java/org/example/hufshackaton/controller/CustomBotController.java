@@ -81,4 +81,14 @@ public class CustomBotController {
         }
     }
 
+    @GetMapping("/search_sports")
+    @Operation(summary = "스포츠를 검색하고, 없으면 물어본다.")
+    public ResponseEntity<?> searchSports(
+            @RequestParam(value = "sports_name") String sports_name
+    ) throws IOException {
+        Sports sports = customBotService.getSports(sports_name);
+        return ResponseEntity.ok(sports);
+    }
+
+
 }

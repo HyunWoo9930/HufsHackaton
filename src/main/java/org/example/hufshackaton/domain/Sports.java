@@ -20,6 +20,7 @@ public class Sports {
     private String name;
     private String description;
     private String imageUrl;
+    private String country;
 
     @OneToMany(mappedBy = "sports", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Step> steps = new HashSet<>();

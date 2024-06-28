@@ -7,6 +7,7 @@ import com.google.api.services.youtube.model.SearchListResponse;
 import com.google.api.services.youtube.model.SearchResult;
 import com.google.api.services.youtube.model.Video;
 import com.google.api.services.youtube.model.VideoListResponse;
+import org.checkerframework.checker.units.qual.C;
 import org.example.hufshackaton.domain.ChatGPTRequest;
 import org.example.hufshackaton.domain.ChatGPTResponse;
 import org.example.hufshackaton.domain.Sports;
@@ -57,6 +58,10 @@ public class CustomBotService {
             newSports.setDescription(description);
             String imgUrl = getImgUrl(sports_name);
             newSports.setImageUrl(imgUrl);
+            request = new ChatGPTRequest(model, sports_name + "은 어디나라 운동이야? 다른 말은 하지말고 어디 나라인지만 적어줘. 나라가 많으면 그냥 공통이라고만 적어줘.");
+            chatGPTResponse = template.postForObject(apiURL, request, ChatGPTResponse.class);
+            String country = chatGPTResponse.getChoices().get(0).getMessage().getContent();
+            newSports.setCountry(country);
             for (String stepStr : steps) {
                 ChatGPTRequest stepRequest = new ChatGPTRequest(model, "운동 종류는 " + sports_name + "이고, 운동 단계는 " + stepStr + "이 단계를 두줄 정도로 요약해줘. 요약 말고 다른 말은 하지말아줘.");
                 ChatGPTResponse stepChatGPTResponse = template.postForObject(apiURL, stepRequest, ChatGPTResponse.class);
@@ -134,5 +139,16 @@ public class CustomBotService {
             imageUrl = "알맞은 url을 찾지 못하였습니다.";
         }
         return imageUrl;
+    }
+
+    public Sports getSports(String sports_name) throws IOException {
+        Sports sports = sportsRepository.searchByName(sports_name);
+        if (sports == null) {
+            ChatGPTRequest request = new ChatGPTRequest(model, "넌 이제 " + sports_name + "에 전문가야. 초심자가 너한테 물어봤을떄 " + sports_name + "을 10단계로 나눠서 알려줘. 다른건 전부 빼고 파싱하기 좋게 1부터 10까지 개행으로만 나누어서 적어줘");
+            ChatGPTResponse chatGPTResponse = template.postForObject(apiURL, request, ChatGPTResponse.class);
+            return saveSportsAndStep(sports_name, chatGPTResponse.getChoices().get(0).getMessage().getContent());
+        } else {
+            return sports;
+        }
     }
 }
