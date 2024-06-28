@@ -5,11 +5,11 @@ import org.example.hufshackaton.domain.ChatGPTResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
+
+import java.util.Arrays;
+import java.util.List;
 
 @RestController
 @RequestMapping("/bot")
@@ -17,8 +17,7 @@ public class CustomBotController {
     @Value("${openai.model}")
     private String model;
 
-    @Value("${openai.api.url}")
-    private String apiURL;
+    private String apiURL = "https://api.openai.com/v1/chat/completions";
 
     @Autowired
     private RestTemplate template;
@@ -52,6 +51,17 @@ public class CustomBotController {
                 "사회적 상호작용은 " + interaction + ", " +
                 "이고 Temperature 는 0.2이야.");
         ChatGPTResponse chatGPTResponse = template.postForObject(apiURL, request, ChatGPTResponse.class);
+        return ResponseEntity.ok(chatGPTResponse.getChoices().get(0).getMessage().getContent());
+    }
+
+    @GetMapping("/create_new_sports")
+    public ResponseEntity<?> createNewSports(
+            @RequestParam(value = "sports_name") String sports_name
+    ) {
+        ChatGPTRequest request = new ChatGPTRequest(model, "넌 이제 " + sports_name + "에 전문가야. 초심자가 너한테 물어봤을떄 " + sports_name + "을 10단계로 나눠서 알려줘. 다른건 전부 빼고 파싱하기 좋게 1부터 10까지 개행으로만 나누어서 적어줘");
+        ChatGPTResponse chatGPTResponse = template.postForObject(apiURL, request, ChatGPTResponse.class);
+        List<String> steps = Arrays.stream(chatGPTResponse.getChoices().get(0).getMessage().getContent().split("\n")).toList();
+
         return ResponseEntity.ok(chatGPTResponse.getChoices().get(0).getMessage().getContent());
     }
 

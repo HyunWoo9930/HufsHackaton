@@ -33,7 +33,7 @@ public class UserController {
     @PostMapping("/create")
     public ResponseEntity<String> createUser(@RequestBody User user) {
         try {
-            userService.createUser(user.getUserId(), user.getName(), user.getPassword(), user.getEmail());
+            userService.createUser(user.getUserId(), user.getPassword());
             return ResponseEntity.ok().body("ok");
         } catch (DataIntegrityViolationException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Duplicate entry for user ID or email.");

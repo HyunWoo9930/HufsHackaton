@@ -24,11 +24,9 @@ public class UserService {
         return userRepository.findAll();
     }
 
-    public void createUser(String user_id, String user_name, String password, String email) {
+    public void createUser(String user_id, String password) {
         User user = new User();
         user.setUserId(user_id);
-        user.setName(user_name);
-        user.setEmail(email);
         user.setPassword(passwordEncoder.encode(password));
         userRepository.save(user);
     }

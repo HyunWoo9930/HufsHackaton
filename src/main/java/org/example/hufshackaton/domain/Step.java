@@ -8,18 +8,18 @@ import lombok.Setter;
 @Entity
 @Getter
 @Setter
-@Table
-public class User {
-
+@Table(name = "steps")
+public class Step {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Schema(hidden = true)
     private Long id;
-    private String userId;
-    private String password;
 
+    private String name;
+    private String youtubeUrl;
 
-    public User() {
-
-    }
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sports_id")
+    @Schema(hidden = true)
+    private Sports sports;
 }
