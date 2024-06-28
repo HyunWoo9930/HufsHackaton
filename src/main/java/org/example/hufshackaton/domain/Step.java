@@ -14,6 +14,7 @@ public class Step {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Schema(hidden = true)
+    @JsonIgnore
     private Long id;
 
     private String name;
