@@ -61,7 +61,8 @@ public class CustomBotController {
                 "규칙 및 규율은 " + rule + ", " +
                 "사회적 상호작용은 " + interaction + ", " +
                 "이고 Temperature 는 0.2이야." +
-                "다른 내용은 덧붙히지 말고 추천하는 운동만 얘기해줘.");
+                "다른 내용은 덧붙히지 말고 추천하는 운동만 얘기해줘." +
+                "절대 뭐 괄호나 영어표현, 이런거 붙히지 말고 단어만 얘기해.");
         ChatGPTResponse chatGPTResponse = template.postForObject(apiURL, request, ChatGPTResponse.class);
         String sports_name = chatGPTResponse.getChoices().get(0).getMessage().getContent();
 
