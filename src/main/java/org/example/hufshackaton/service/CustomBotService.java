@@ -5,11 +5,17 @@ import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.youtube.YouTube;
 import com.google.api.services.youtube.model.SearchListResponse;
 import com.google.api.services.youtube.model.SearchResult;
+import com.google.api.services.youtube.model.Video;
+import com.google.api.services.youtube.model.VideoListResponse;
+import org.example.hufshackaton.domain.ChatGPTRequest;
+import org.example.hufshackaton.domain.ChatGPTResponse;
 import org.example.hufshackaton.domain.Sports;
 import org.example.hufshackaton.domain.Step;
 import org.example.hufshackaton.repository.SportsRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -22,6 +28,14 @@ public class CustomBotService {
     @Value("${youtube.api.key}")
     private String apiKey;
 
+    @Value("${openai.model}")
+    private String model;
+
+    private String apiURL = "https://api.openai.com/v1/chat/completions";
+
+    @Autowired
+    private RestTemplate template;
+
     private final SportsRepository sportsRepository;
 
     public CustomBotService(SportsRepository sportsRepository) {
@@ -31,16 +45,19 @@ public class CustomBotService {
     public Sports saveSportsAndStep(String sports_name, String str) throws IOException {
         Sports sports = findSports(sports_name);
         List<String> steps = Arrays.stream(str.split("\n")).toList();
-        if(sports == null) {
+        if (sports == null) {
             Sports newSports = new Sports();
             newSports.setName(sports_name);
+            ChatGPTRequest request = new ChatGPTRequest(model, "넌 이제 " + sports_name + "에 전문가야. 초심자한테 " + sports_name + "에 관해서 간단하게 두줄정도만 설명하줘 다른 말은 하지마.");
+            ChatGPTResponse chatGPTResponse = template.postForObject(apiURL, request, ChatGPTResponse.class);
+            String description = chatGPTResponse.getChoices().get(0).getMessage().getContent();
+            newSports.setDescription(description);
             for (String stepStr : steps) {
                 Step step = new Step();
                 step.setSports(newSports);
                 step.setName(stepStr);
-                String s = searchVideo(sports_name, stepStr);
-                System.out.println("s = " + s);
-                step.setYoutubeUrl(s);
+                String video = searchVideo(sports_name, stepStr);
+                step.setYoutubeUrl(video);
                 newSports.addStep(step);
             }
             return saveSports(newSports);
@@ -65,7 +82,8 @@ public class CustomBotService {
         YouTube youtube = new YouTube.Builder(
                 new com.google.api.client.http.javanet.NetHttpTransport(),
                 jsonFactory,
-                request -> {})
+                request -> {
+                })
                 .build();
 
         // YouTube Search API를 사용하여 동영상 검색을 위한 요청 객체 생성
@@ -86,7 +104,6 @@ public class CustomBotService {
         if (searchResultList != null && searchResultList.size() > 0) {
             SearchResult searchResult = searchResultList.get(0);
             String videoId = searchResult.getId().getVideoId();
-
             return "https://www.youtube.com/watch?v=" + videoId;
         }
         return "검색 결과가 없습니다";

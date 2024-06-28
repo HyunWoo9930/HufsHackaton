@@ -17,8 +17,8 @@ public class Sports {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Schema(hidden = true)
     private Long id;
-
     private String name;
+    private String description;
 
     @OneToMany(mappedBy = "sports", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Step> steps = new HashSet<>();
