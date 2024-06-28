@@ -63,7 +63,6 @@ public class CustomBotController {
                 "이고 Temperature 는 0.2이야." +
                 "다른 내용은 덧붙히지 말고 추천하는 운동만 얘기해줘.");
         ChatGPTResponse chatGPTResponse = template.postForObject(apiURL, request, ChatGPTResponse.class);
-
         String sports_name = chatGPTResponse.getChoices().get(0).getMessage().getContent();
 
         Sports sports = customBotService.findSports(sports_name);
